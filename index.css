@@ -1,0 +1,59 @@
+body {
+    padding: 0;
+    margin: 0;
+    background-color: #1b1b1b;
+    font-family: sans-serif;
+}
+
+div#startscreen {
+    position: fixed;
+    top: 15vh;
+    left: 20vw;
+    height: 60vh;
+    width: 60vw;
+    
+    border-radius: 30px;
+    
+    background-color: #b1d4ed;
+}
+
+div#startscreen h1 {
+    font-weight: normal;
+    font-family: sans-serif;
+    padding-left: 1em;
+}
+
+div#startscreen div.desc {
+    
+    padding-left: 2em;
+}
+
+div#startscreen button {
+    position: absolute;
+    bottom: 3vh;
+    right: 3vw;
+    font-size: 2.4em;
+    
+    padding: 0.05em 0.75em;
+    
+    border-radius: 15px;
+}
+
+button.blue-button {
+    background-color: #0000;
+    border: 2px solid #031c99;
+    color: #031c99;
+    
+    transition: 0.4s ease;
+}
+
+button.blue-button:hover {
+    background-color: #031c99;
+    color: white;
+}
+
+button.blue-button:active {
+    background-color: #07115e;
+    border-color: #07115e;
+    color: red;
+}
