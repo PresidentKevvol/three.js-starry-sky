@@ -1,12 +1,19 @@
 // the code for 3D rendering
 
 //an array for all the stars objects
-var stars_objs = []
+var stars_objs = [];
 
 //the scene and the camera
 var scene;
 var camera;
 var renderer;
+
+//the texture loader
+var textue_loader;
+
+//the sky sphere with the milky way as the background
+var sky_texture;
+var sky_sphere;
 
 // the particles
 var particles;
@@ -76,7 +83,9 @@ varying vec3 objPosition;
 void main() {
     //float colorIntensity = pow(0.5 - dot(vertexNormal, vec3(0.0, 1.0, 0.0)), 2.0);
     float colorIntensity = pow( - dot(vertexNormal, normalize(-1.0 * starObjPosition)), 2.0);
-    gl_FragColor = vec4( baseColor, 1.0 ) * colorIntensity;
+    //gl_FragColor = vec4( baseColor, 1.0 ) * colorIntensity;
+
+    gl_FragColor = vec4( baseColor, colorIntensity );
 }
 `;
 
@@ -112,7 +121,7 @@ function load_stars() {
         
         //calculate the size (lower vmag -> brighter -> larger dot visually)
         //var osize = 60 * Math.pow(1.5, -vmag);
-        var osize = 70 * Math.pow(1.5, -vmag);
+        var osize = 75 * Math.pow(1.35, Math.min(-vmag, 0.15));
         
         //get the color (from bv index)
         var bv = parseFloat(st["bv"]);
@@ -146,9 +155,27 @@ function load_stars() {
     }
 }
 
+function load_skysphere() {
+    var skygeo = new THREE.SphereGeometry(14000, 96, 48);
+    
+    textue_loader = new THREE.TextureLoader();
+    sky_texture = textue_loader.load("starmap_16k_d63.jpg");
+    
+    var material = new THREE.MeshPhongMaterial({ 
+        map: sky_texture,
+    });
+    
+    sky_sphere = new THREE.Mesh(skygeo, material);
+    sky_sphere.material.side = THREE.BackSide;
+    
+    sky_sphere.rotateY(-Math.PI / 2);
+    
+    scene.add(sky_sphere);
+}
+
 function indexjs_setup() {
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 12000);
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 15000);
     
     renderer = new THREE.WebGLRenderer({"antialias": true});
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -171,9 +198,8 @@ function indexjs_setup() {
     
     //load the stars
     load_stars();
-    
-    //add the skybox
-    //load_skybox();
+    //load the milky way sky sphere
+    load_skysphere();
     
     animate();
 }
