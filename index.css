@@ -5,6 +5,21 @@ body {
     font-family: sans-serif;
 }
 
+div#settings {
+    position: fixed;
+    right: 5px;
+    bottom: 5px;
+    z-index: 9;
+
+    padding: 0.8em;
+    border-radius: 15px;
+    background-color: lightgray;
+}
+
+div#settings input#lat {
+    width: 5.5em;
+}
+
 div#startscreen {
     position: fixed;
     top: 15vh;

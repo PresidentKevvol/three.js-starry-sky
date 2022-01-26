@@ -11,6 +11,14 @@
         <script src="index.js"></script>
     </head>
     <body>
-    
+        <div id="settings">
+            set viewing latitude:<br>
+            (degrees +90 to -90)<br>
+            <input type="number" id="lat" step="0.1" min="-90" max="90">
+            <button id="set-lat" class="blue-button">set</button><br>
+            <br>
+            Rotation speed:<br>
+            <input type="range" id="rot-speed" step="0.1" min="0" max="20" value="5">
+        </div>
     </body>
 </html>

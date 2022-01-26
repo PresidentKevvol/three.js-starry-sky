@@ -3,6 +3,13 @@
 //an array for all the stars objects
 var stars_objs = [];
 
+//the three.js object group for the whole sky (all stars + milky way bg)
+var sky_group;
+
+//the floor (a group with a circle geometry)
+var ground_group;
+var ground_circle;
+
 //the scene and the camera
 var scene;
 var camera;
@@ -10,6 +17,8 @@ var renderer;
 
 //the texture loader
 var textue_loader;
+//the font loader
+var font_loader;
 
 //the sky sphere with the milky way as the background
 var sky_texture;
@@ -24,6 +33,9 @@ var hemi_light;
 
 //the control for the camera
 var controls;
+
+//the speed at which the sky dome rotates
+var rot_speed = 0.0005;
 
 //convert a star's b-v temperature index to human eye color
 function bv2rgb(bv){    // RGB <0,1> <- BV <-0.4,+2.0> [-]
@@ -150,7 +162,8 @@ function load_stars() {
         star.position.x = sy;
         star.position.y = sz;
         star.position.z = sx;
-        scene.add(star);
+        //scene.add(star);
+        sky_group.add(star);
         stars_objs.push(star);
     }
 }
@@ -158,8 +171,7 @@ function load_stars() {
 function load_skysphere() {
     var skygeo = new THREE.SphereGeometry(14000, 96, 48);
     
-    textue_loader = new THREE.TextureLoader();
-    sky_texture = textue_loader.load("starmap_16k_d63.jpg");
+    sky_texture = textue_loader.load("starmap_16k_d57.jpg");
     
     var material = new THREE.MeshPhongMaterial({ 
         map: sky_texture,
@@ -170,12 +182,78 @@ function load_skysphere() {
     
     sky_sphere.rotateY(-Math.PI / 2);
     
-    scene.add(sky_sphere);
+    //scene.add(sky_sphere);
+    sky_group.add(sky_sphere);
+}
+
+function load_ground() {
+    var geom = new THREE.CylinderGeometry( 50, 50, 0.5, 8 );
+    
+    var grass_texture = textue_loader.load("grass_textures_seamless_36.jpg");
+    grass_texture.wrapS = THREE.RepeatWrapping;
+    grass_texture.wrapT = THREE.RepeatWrapping;
+    grass_texture.repeat.set( 8, 8 );
+    var mat = new THREE.MeshPhongMaterial({ map: grass_texture, });
+    //var mat = new THREE.MeshStandardMaterial( { color: 0x144a09 } );
+    ground_circle = new THREE.Mesh(geom, mat);
+
+    ground_circle.position.y = -3;
+    
+    ground_group = new THREE.Group();
+    ground_group.add(ground_circle);
+
+    //now create the compass (N, E, S, W direction texts)
+    var direction_N_geom;
+    font_loader.load('helvetiker_regular.typeface.json', function(font) {
+        direction_N_geom = new THREE.TextGeometry( 'N', {
+		font: font,
+		size: 40,
+		height: 5,
+		curveSegments: 12,
+		bevelEnabled: true,
+		bevelThickness: 35,
+		bevelSize: 8,
+		bevelOffset: 0,
+		bevelSegments: 5
+        });
+    });
+    
+    var direction_N = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 11), new THREE.MeshStandardMaterial({color: 0xe84d4d }));
+    var direction_E = new THREE.Mesh(new THREE.BoxGeometry(11, 0.03, 0.03), new THREE.MeshStandardMaterial({color: 0xa6a6a6 }));
+    var direction_S = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 11), new THREE.MeshStandardMaterial({color: 0x3d5ccc }));
+    var direction_W = new THREE.Mesh(new THREE.BoxGeometry(11, 0.03, 0.03), new THREE.MeshStandardMaterial({color: 0xa6a6a6 }));
+    
+    direction_N.position.z = 6;
+    direction_E.position.x = 6;
+    direction_S.position.z = -6;
+    direction_W.position.x = -6;
+    
+    direction_N.position.y = -2.4;
+    direction_E.position.y = -2.4;
+    direction_S.position.y = -2.4;
+    direction_W.position.y = -2.4;
+    
+    ground_group.add(direction_N);
+    ground_group.add(direction_E);
+    ground_group.add(direction_S);
+    ground_group.add(direction_W);
+    
+    scene.add(ground_group);
+}
+
+//when the rotation speed slider is changed
+function rot_speed_change (evnt) {
+    var value = evnt.target.value;
+    rot_speed = value / 10000;
 }
 
 function indexjs_setup() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 15000);
+    
+    //create the loaders
+    textue_loader = new THREE.TextureLoader();
+    font_loader = new THREE.FontLoader();
     
     renderer = new THREE.WebGLRenderer({"antialias": true});
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -185,32 +263,71 @@ function indexjs_setup() {
     document.body.appendChild(renderer.domElement);
     
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+    //disable zooming and panning (can only look in different directions)
+    controls.enablePan = false;
+    controls.enableZoom = false;
     
     //an ambient light
     amb_light = new THREE.AmbientLight(0x909090);
     scene.add(amb_light);
     
     //the hemisphere light
-    hemi_light = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.8);
+    hemi_light = new THREE.HemisphereLight(0x21266e, 0x080820, 0.2);
     scene.add(hemi_light);
     
-    camera.position.z = 1;
+    //set camera position
+    //camera.position.x = 1;
+    //camera.lookAt(-1,0,0);
+    camera.position.z = -0.01;
+
+    
+    //create the group object
+    //the next functions will add objects to it
+    sky_group = new THREE.Group();
     
     //load the stars
     load_stars();
     //load the milky way sky sphere
     load_skysphere();
+
+    //add the objects to the scene
+    scene.add(sky_group);
+    
+    //add the ground
+    load_ground();
+
+    //rotate whole sky dome to emulate earth on requested lattitude
+    sky_group.rotateOnAxis(unit_i, lat_in_rad);
     
     animate();
+    
+    //set the controls' event listener
+    document.getElementById("rot-speed").addEventListener("input", rot_speed_change);
 }
 
 // frame rate
 var frames_per_sec = 60;
 
+//the requested lattitude (default toronto, ON)
+var lat_in_rad = 43.75 / 180 * Math.PI;
+
+var unit_i = new THREE.Vector3(1, 0, 0);
+var unit_j = new THREE.Vector3(0, 1, 0);
+var unit_k = new THREE.Vector3(0, 0, 1);
+
+//vector pointing to north celestial pole
+//this always rotate along with the sky group
+var axis_polar = unit_j.clone();
+axis_polar.applyAxisAngle(unit_i, lat_in_rad);
+
 function animate() {
     requestAnimationFrame(animate);
     
+    //rotate the sky
+    sky_group.rotateOnAxis(unit_j, -rot_speed);
+    
     controls.update();
+    
     
     renderer.render(scene, camera);
 }
