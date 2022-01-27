@@ -34,6 +34,11 @@ var hemi_light;
 //the control for the camera
 var controls;
 
+//the latitude we're currently on (in degrees)
+var cur_lat_deg = 32.18;
+//corresping to this object rotation
+var cur_rot_rad = lat2rot(cur_lat_deg);
+
 //the speed at which the sky dome rotates
 var rot_speed = 0.0005;
 
@@ -57,6 +62,11 @@ function bv2rgb(bv){    // RGB <0,1> <- BV <-0.4,+2.0> [-]
     else if ((bv>= 0.40)&&(bv<1.50)) { t=(bv-0.40)/(1.50-0.40); b=1.00-(0.47*t)+(0.1*t*t); }
     else if ((bv>= 1.50)&&(bv<1.94)) { t=(bv-1.50)/(1.94-1.50); b=0.63         -(0.6*t*t); }
     return [r, g, b];
+}
+
+//geo latitude to in program skydome rotation
+function lat2rot (lat) {
+    return (90 - lat) / 180 * Math.PI;
 }
 
 //the glsl code for the shaders
@@ -246,6 +256,30 @@ function rot_speed_change (evnt) {
     var value = evnt.target.value;
     rot_speed = value / 10000;
 }
+//when the set lat button is pressed
+function set_lat_pressed() {
+    var value = document.getElementById("lat").value;
+
+    //clamp to +-90
+    if (value > 90) {
+        value = 90;
+    } else if (value < -90) {
+        value = -90;
+    }
+
+    //the new rotation
+    var new_rot = lat2rot(value);
+    
+    //calculate the differnce and rotate that amount
+    var rot_diff = new_rot - cur_rot_rad;
+
+    axis_polar.applyAxisAngle(unit_i, rot_diff);
+    //sky_group.rotateOnAxis(unit_i, rot_diff);
+    sky_group.rotateOnWorldAxis(unit_i, rot_diff);
+    
+    //update value
+    cur_rot_rad = new_rot;
+}
 
 function indexjs_setup() {
     scene = new THREE.Scene();
@@ -297,19 +331,21 @@ function indexjs_setup() {
     load_ground();
 
     //rotate whole sky dome to emulate earth on requested lattitude
-    sky_group.rotateOnAxis(unit_i, lat_in_rad);
+    //sky_group.rotateOnAxis(unit_i, cur_rot_rad);
+    sky_group.rotateOnWorldAxis(unit_i, cur_rot_rad);
     
     animate();
     
     //set the controls' event listener
     document.getElementById("rot-speed").addEventListener("input", rot_speed_change);
+    document.getElementById("set-lat").addEventListener("click", set_lat_pressed);
 }
 
 // frame rate
 var frames_per_sec = 60;
 
 //the requested lattitude (default toronto, ON)
-var lat_in_rad = 43.75 / 180 * Math.PI;
+//var lat_in_rad = 43.75 / 180 * Math.PI;
 
 var unit_i = new THREE.Vector3(1, 0, 0);
 var unit_j = new THREE.Vector3(0, 1, 0);
@@ -318,13 +354,14 @@ var unit_k = new THREE.Vector3(0, 0, 1);
 //vector pointing to north celestial pole
 //this always rotate along with the sky group
 var axis_polar = unit_j.clone();
-axis_polar.applyAxisAngle(unit_i, lat_in_rad);
+axis_polar.applyAxisAngle(unit_i, cur_rot_rad);
 
 function animate() {
     requestAnimationFrame(animate);
     
     //rotate the sky
-    sky_group.rotateOnAxis(unit_j, -rot_speed);
+    //sky_group.rotateOAxis(unit_j, -rot_speed);
+    sky_group.rotateOnWorldAxis(axis_polar, -rot_speed);
     
     controls.update();
     
