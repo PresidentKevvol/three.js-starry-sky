@@ -369,4 +369,10 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+function window_resize() {
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    camera.aspect = window.innerWidth / window.innerHeight;
+}
+
 document.addEventListener("DOMContentLoaded", indexjs_setup);
+window.addEventListener('resize', window_resize);
